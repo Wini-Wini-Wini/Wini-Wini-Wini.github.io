@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCK THE WRLD // SYSTEM</title>
+    <style>
+        /* --- CORE RESET & VARIABLES --- */
+        :root {
+            --bg-color: #050505;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+            --accent-red: #ff3333;
+            --accent-green: #00ff41;
+            --border-color: #333;
+            --grid-line: 1px solid var(--border-color);
+            --font-display: 'Times New Roman', Times, serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            text-transform: uppercase;
+        }
+
+        /* --- VISUAL FX --- */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+        }
+
+        /* Z-INDEX FIX: Cursor must be highest */
+        .cursor-outer {
+            position: fixed; width: 20px; height: 20px;
+            border: 1px solid var(--text-main);
+            pointer-events: none; 
+            z-index: 999999; /* Highest priority */
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.1s, height 0.1s;
+        }
+        
+        .cursor-inner {
+            position: fixed; width: 4px; height: 4px;
+            background-color: var(--text-main);
+            pointer-events: none; 
+            z-index: 999999; /* Highest priority */
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+
+        /* --- LAYOUT GRID --- */
+        .app-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: auto 1fr auto;
+            height: 100%;
+            border: var(--grid-line);
+            margin: 10px;
+            position: relative;
+        }
+
+        /* --- HEADER --- */
+        header {
+            grid-column: 1 / -1;
+            border-bottom: var(--grid-line);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 3rem;
+            line-height: 0.8;
+            font-style: italic;
+            letter-spacing: -2px;
+            color: var(--text-main);
+        }
+
+        .sys-status {
+            text-align: right;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+
+        .status-light {
+            display: inline-block; width: 6px; height: 6px;
+            background-color: var(--accent-green);
+            margin-left: 5px;
+            animation: blink 2s infinite;
+        }
+
+        /* --- SIDEBAR NAV --- */
+        aside {
+            border-right: var(--grid-line);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .nav-link {
+            color: var(--text-dim);
+            text-decoration: none;
+            display: block;
+            padding: 10px 0;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main);
+            padding-left: 15px;
+            text-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+
+        .nav-link::before { content: "> "; opacity: 0; }
+        .nav-link:hover::before, .nav-link.active::before { opacity: 1; }
+
+        /* --- MAIN CONTENT AREA --- */
+        main {
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .page-section {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .page-section.active {
+            display: flex;
+        }
+
+        /* ================= PAGE: HOME ================= */
+        #page-home {
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #111 0%, #000 70%);
+        }
+
+        .home-stage {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            aspect-ratio: 16/9;
+            border: 1px solid var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .home-video-content {
+            text-align: center;
+        }
+
+        .flash-zone {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 15%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: transparent;
+            transition: all 0.1s;
+            z-index: 10;
+        }
+
+        .flash-zone:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+            text-shadow: 2px 0 var(--accent-red), -2px 0 var(--accent-green);
+        }
+
+        .flash-left { left: 0; border-right: 1px dashed rgba(50,50,50,0); }
+        .flash-right { right: 0; border-left: 1px dashed rgba(50,50,50,0); }
+        
+        .flash-zone:hover { border-color: var(--text-dim); }
+
+        .video-label {
+            position: absolute;
+            bottom: -30px; left: 0;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        /* ================= PAGE: VIDEOS ================= */
+        #page-videos {
+            padding: 0;
+        }
+
+        .upload-bar {
+            padding: 20px;
+            border-bottom: var(--grid-line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+        }
+
+        .btn-upload {
+            background: var(--text-main);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            font-size: 12px;
+            transition: transform 0.1s;
+        }
+        
+        .btn-upload:hover { transform: scale(1.05); background: #fff; }
+
+        .file-table { width: 100%; border-collapse: collapse; }
+        .file-table th {
+            text-align: left; padding: 10px 20px;
+            border-bottom: var(--grid-line);
+            color: var(--text-dim);
+            font-weight: normal;
+            position: sticky; top: 0;
+            background: var(--bg-color);
+        }
+        .file-table td { padding: 15px 20px; border-bottom: 1px solid #111; }
+        .file-table tr:hover { background: #0e0e0e; color: #fff; }
+        .file-table tr:hover td { border-bottom: 1px solid #333; }
+
+        .clickable-title {
+            cursor: none; /* Mantém o cursor customizado */
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .clickable-title:hover {
+            color: var(--accent-green);
+            text-decoration: underline;
+        }
+
+        /* ACTION BUTTONS */
+        .btn-del {
+            background: transparent;
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+            padding: 2px 5px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            opacity: 0.5;
+            transition: all 0.2s;
+            cursor: none;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .btn-del:hover {
+            opacity: 1;
+            background: var(--accent-red);
+            color: #000;
+        }
+
+        .btn-save {
+            background: transparent;
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 2px 5px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            opacity: 1;
+            transition: all 0.2s;
+            cursor: none;
+            display: inline-block;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+        .btn-save.unsaved {
+            animation: pulse-green 1s infinite;
+            background: rgba(0, 255, 65, 0.1);
+        }
+        .btn-save:hover {
+            opacity: 1;
+            background: var(--accent-green);
+            color: #000;
+        }
+        
+        .btn-save-static {
+            background: transparent;
+            color: #333;
+            border: 1px solid #333;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            cursor: none;
+            display: inline-block;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(0, 255, 65, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); }
+        }
+
+        /* ================= PAGE: PROFILE ================= */
+        #page-profile {
+            padding: 40px;
+            align-items: center;
+        }
+
+        .profile-card {
+            width: 100%;
+            max-width: 600px;
+            border: 1px solid var(--text-main);
+            padding: 20px;
+            /* Grid layout managed within children now */
+            background: #000; /* Default background */
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        /* Inner containers to handle grid layout */
+        .profile-mode-container {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Banner Styles */
+        .profile-card.banner-matrix { background: linear-gradient(180deg, rgba(0,20,0,1) 0%, rgba(0,0,0,1) 100%); border-color: var(--accent-green); }
+        .profile-card.banner-error { background: linear-gradient(180deg, rgba(20,0,0,1) 0%, rgba(0,0,0,1) 100%); border-color: var(--accent-red); }
+        .profile-card.banner-noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E"); }
+
+        .profile-left-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border: 1px solid var(--text-dim);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 8px;
+            white-space: pre;
+            overflow: hidden;
+            /* Default color, overridden by JS */
+            color: var(--accent-green);
+            background: #000;
+            font-family: var(--font-mono);
+            line-height: 8px;
+            transition: color 0.2s;
+        }
+
+        .avatar-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 10px;
+        }
+        
+        .avatar-btn {
+            background: transparent;
+            border: 1px solid var(--text-dim);
+            color: var(--text-main);
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: none;
+        }
+        .avatar-btn:hover { background: var(--text-dim); color: #000; }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* VIEW MODE TYPOGRAPHY */
+        .profile-name-view {
+            font-size: 2.5rem;
+            font-family: var(--font-display);
+            border-bottom: 1px solid var(--text-dim);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+
+        .profile-bio-view {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.4;
+            white-space: pre-wrap;
+            min-height: 50px;
+        }
+
+        .profile-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .profile-label {
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        .profile-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--text-dim);
+            color: var(--text-main);
+            font-family: var(--font-display);
+            font-size: 2rem;
+            width: 100%;
+            outline: none;
+        }
+        .profile-input:focus { border-bottom-color: var(--accent-green); }
+
+        .profile-textarea {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            padding: 10px;
+            width: 100%;
+            min-height: 80px;
+            resize: none;
+            outline: none;
+            font-size: 12px;
+        }
+        .profile-textarea:focus { border-color: var(--text-main); }
+
+        .banner-select {
+            background: #000;
+            color: var(--text-main);
+            border: 1px solid var(--text-dim);
+            padding: 5px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            outline: none;
+            width: 100%;
+            cursor: none;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-dim);
+            font-size: 12px;
+            border-bottom: 1px dashed #222;
+            padding-bottom: 2px;
+        }
+        .stat-val { color: var(--text-main); }
+
+        /* ================= MODAL: GENERAL (UPLOAD & PLAYER) ================= */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-window {
+            width: 400px;
+            border: 1px solid var(--text-main);
+            background: #000;
+            padding: 20px;
+            box-shadow: 10px 10px 0 var(--border-color);
+            position: relative;
+        }
+        
+        /* Player specific modal styles */
+        .player-window {
+            width: 90%;
+            max-width: 800px;
+            padding: 0;
+            border: 1px solid var(--text-main);
+        }
+
+        .player-header {
+            background: var(--text-main);
+            color: #000;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .close-icon {
+            cursor: none;
+            padding: 0 5px;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+        }
+
+        .video-viewport {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-viewport video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .noise-overlay {
+            width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.1;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 5px; color: var(--text-dim); font-size: 10px; }
+        .form-input {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--text-dim);
+            color: var(--text-main);
+            padding: 8px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+        }
+        .form-input:focus { border-color: var(--text-main); outline: none; }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            grid-column: 1 / -1;
+            border-top: var(--grid-line);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto 1fr auto;
+                margin: 0; border: none;
+            }
+            aside {
+                flex-direction: row;
+                border-bottom: var(--grid-line);
+                border-right: none;
+                padding: 10px;
+            }
+            .nav-link { padding: 5px 10px; font-size: 0.9rem; }
+            .home-stage { width: 95%; }
+            .profile-card { grid-template-columns: 1fr; }
+            .profile-mode-container { grid-template-columns: 1fr; }
+            .profile-pic { width: 100px; margin: 0 auto; }
+            .profile-name-view { font-size: 1.5rem; text-align: center; }
+            
+            .col-date { display: none; }
+            .btn-del, .btn-save { padding: 5px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- VISUAL FX -->
+    <div class="scanlines"></div>
+    <div class="cursor-outer" id="cursor-outer"></div>
+    <div class="cursor-inner" id="cursor-inner"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <h1>FCK THE<br>WRLD.</h1>
+            </div>
+            <div class="sys-status">
+                <p>SERVER: ONLINE <span class="status-light"></span></p>
+                <p id="clock">00:00:00</p>
+            </div>
+        </header>
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside>
+            <nav>
+                <a href="#" class="nav-link active" onclick="navigate('home')">HOME</a>
+                <a href="#" class="nav-link" onclick="navigate('videos')">VIDEOS</a>
+                <a href="#" class="nav-link" onclick="navigate('profile')">PROFILE</a>
+            </nav>
+            <div style="font-size: 10px; color: #444; margin-top: auto;">
+                BUILD: 2026.10<br>
+                TERM_ID: 99X
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main>
+            
+            <!-- 1. HOME PAGE -->
+            <section id="page-home" class="page-section active">
+                <div class="home-stage">
+                    <div class="flash-zone flash-left" onclick="prevVideo()">&lt;</div>
+                    
+                    <div class="home-video-content" id="featured-content">
+                        <!-- Content Injected via JS -->
+                    </div>
+
+                    <div class="flash-zone flash-right" onclick="nextVideo()">&gt;</div>
+                    <div class="video-label" id="featured-label">LOADING...</div>
+                </div>
+            </section>
+
+            <!-- 2. VIDEOS PAGE -->
+            <section id="page-videos" class="page-section">
+                <div class="upload-bar">
+                    <span>DIR: /PUBLIC/UPLOADS/</span>
+                    <button class="btn-upload" onclick="openUploadModal()">UPLOAD_VIDEO.EXE</button>
+                </div>
+                <table class="file-table">
+                    <thead>
+                        <tr>
+                            <th>FILE_NAME</th>
+                            <th>LOC</th>
+                            <th>SIZE</th>
+                            <th class="col-date">DATE</th>
+                            <th style="width: 80px; text-align: center;">ACT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="video-list-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 3. PROFILE PAGE -->
+            <section id="page-profile" class="page-section">
+                <div id="profile-card" class="profile-card">
+                    
+                    <!-- MODE 1: VIEW (READ ONLY) -->
+                    <div id="profile-view" class="profile-mode-container">
+                        <div class="profile-left-col">
+                            <div class="profile-pic" id="avatar-view-display">
+                                <!-- ASCII ART HERE -->
+                            </div>
+                        </div>
+
+                        <div class="profile-info">
+                            <div>
+                                <h1 id="view-username" class="profile-name-view">USER</h1>
+                                <div id="view-bio" class="profile-bio-view"></div>
+                            </div>
+                            
+                            <div style="border-top: 1px solid #333; padding-top: 10px; margin-top: auto;">
+                                <div class="stat-row">
+                                    <span>STATUS</span>
+                                    <span class="stat-val">ONLINE</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>TOTAL UPLOADS</span>
+                                    <span id="stat-uploads-count-view" class="stat-val">0</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span>LAST LOGIN</span>
+                                    <span class="stat-val">TODAY</span>
+                                </div>
+                            </div>
+
+                            <button class="btn-upload" style="width: 100%; margin-top: 10px;" onclick="toggleProfileEdit(true)">EDIT_PROFILE.EXE</button>
+                        </div>
+                    </div>
+
+                    <!-- MODE 2: EDIT (FORM) -->
+                    <div id="profile-edit" class="profile-mode-container" style="display:none;">
+                        <div class="profile-left-col">
+                            <div class="profile-pic" id="avatar-edit-display">
+                                <!-- ASCII ART EDITABLE -->
+                            </div>
+                            <div class="avatar-controls">
+                                <button class="avatar-btn" onclick="cycleAvatar(-1)">&lt;</button>
+                                <span style="font-size:10px; color:#666;">IMG</span>
+                                <button class="avatar-btn" onclick="cycleAvatar(1)">&gt;</button>
+                            </div>
+                        </div>
+
+                        <div class="profile-info">
+                            <div class="profile-input-group">
+                                <label class="profile-label">USERNAME</label>
+                                <input type="text" id="profile-name" class="profile-input" value="GUEST_USER" maxlength="15">
+                            </div>
+                            
+                            <div class="profile-input-group">
+                                <label class="profile-label">BANNER STYLE</label>
+                                <select id="profile-banner" class="banner-select" onchange="previewBanner()">
+                                    <option value="default">DEFAULT (VOID)</option>
+                                    <option value="matrix">MATRIX (GREEN)</option>
+                                    <option value="error">ERROR (RED)</option>
+                                    <option value="noise">STATIC NOISE</option>
+                                </select>
+                            </div>
+
+                            <div class="profile-input-group">
+                                <label class="profile-label">ASCII COLOR</label>
+                                <select id="profile-color" class="banner-select" onchange="previewColor()">
+                                    <option value="green">TERMINAL GREEN</option>
+                                    <option value="red">SYSTEM RED</option>
+                                    <option value="cyan">NEON CYAN</option>
+                                    <option value="yellow">WARNING YELLOW</option>
+                                    <option value="purple">VOID PURPLE</option>
+                                    <option value="white">PLAIN WHITE</option>
+                                </select>
+                            </div>
+
+                            <div class="profile-input-group">
+                                <label class="profile-label">BIO / SYNOPSIS</label>
+                                <textarea id="profile-bio" class="profile-textarea" placeholder="NO BIO SET..." maxlength="120"></textarea>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; margin-top: auto;">
+                                <button class="btn-del" style="flex: 1; border-color: var(--text-dim); color: var(--text-dim);" onclick="cancelEdit()">CANCEL</button>
+                                <button class="btn-upload" style="flex: 2;" onclick="saveProfile()">SAVE CHANGES</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer>
+            <span>SYSTEM READY.</span>
+            <span>NO COPYRIGHT INTENDED.</span>
+        </footer>
+    </div>
+
+    <!-- UPLOAD MODAL -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal-window">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">> INITIATE_UPLOAD</h3>
+            <div class="form-group">
+                <label class="form-label">SELECT_FILE</label>
+                <input type="file" id="upload-file" class="form-input" accept="video/*">
+            </div>
+            <div class="form-group">
+                <label class="form-label">LOCATION_TAG</label>
+                <input type="text" id="upload-loc" class="form-input" placeholder="EX: CENTRO, RUA 10...">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-del" onclick="closeUploadModal()">CANCEL</button>
+                <button class="btn-upload" id="confirm-upload-btn" onclick="submitUpload()">CONFIRM UPLOAD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-window" style="border-color: var(--accent-red); box-shadow: 10px 10px 0 var(--accent-red);">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--accent-red); padding-bottom: 10px; color: var(--accent-red);">! WARNING: DELETION</h3>
+            <div style="margin-bottom: 20px; color: var(--text-main);">
+                ARE YOU SURE YOU WANT TO DELETE THIS FILE?<br>
+                <span style="font-size: 10px; color: var(--text-dim);">THIS ACTION CANNOT BE UNDONE. DATA WILL BE LOST.</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-upload" style="background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim);" onclick="closeConfirmModal()">CANCEL</button>
+                <button class="btn-upload" style="background: var(--accent-red); color: #000;" onclick="confirmDelete()">DELETE FILE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVE CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="save-modal">
+        <div class="modal-window" style="border-color: var(--accent-green); box-shadow: 10px 10px 0 var(--accent-green);">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--accent-green); padding-bottom: 10px; color: var(--accent-green);">> SYSTEM_WRITE</h3>
+            <div style="margin-bottom: 20px; color: var(--text-main);">
+                COMMIT FILE TO PERMANENT STORAGE?<br>
+                <span style="font-size: 10px; color: var(--text-dim);">FILE WILL PERSIST AFTER RESTART.</span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-upload" style="background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim);" onclick="closeSaveModal()">CANCEL</button>
+                <button class="btn-upload" style="background: var(--accent-green); color: #000;" onclick="confirmSave()">SAVE TO DB</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLAYER MODAL -->
+    <div class="modal-overlay" id="player-modal">
+        <div class="modal-window player-window">
+            <div class="player-header">
+                <span id="player-title">VIDEO.MP4</span>
+                <button class="close-icon" onclick="closePlayerModal()">[X]</button>
+            </div>
+            <div class="video-viewport" id="player-viewport">
+                <div class="noise-overlay"></div>
+                <!-- Video Element will be injected here -->
+            </div>
+            <div style="padding: 10px; font-size: 10px; color: var(--text-dim); display: flex; justify-content: space-between;">
+                <span id="player-status">STATUS: PLAYING_RAW_DATA</span>
+                <span>CODEC: UNKNOWN</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- NAVIGATION LOGIC ---
+        function navigate(pageId) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            const links = document.querySelectorAll('.nav-link');
+            if(pageId === 'home') links[0].classList.add('active');
+            if(pageId === 'videos') links[1].classList.add('active');
+            if(pageId === 'profile') links[2].classList.add('active');
+
+            if(pageId === 'home') renderFeatured();
+            if(pageId === 'profile') {
+                // Always reset to view mode when entering profile
+                toggleProfileEdit(false);
+                renderProfile();
+            }
+        }
+
+        // --- DATABASE SYSTEM (V6 - Robust Persistence) ---
+        const DB_NAME = 'FCK_WRLD_SYSTEM_V6';
+        const STORE_NAME = 'videos';
+        let dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onerror = (e) => reject(e);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: "id" });
+                }
+            };
+            request.onsuccess = (e) => {
+                console.log("DB SYSTEM V6: ONLINE");
+                resolve(e.target.result);
+            };
+        });
+
+        // --- DB HELPERS ---
+        async function dbSaveVideo(record) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(record); 
+                req.onsuccess = () => resolve(true);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function dbDeleteVideo(id) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.delete(String(id));
+                req.onsuccess = () => resolve(true);
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function dbGetVideo(id) {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction([STORE_NAME], "readonly");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(String(id));
+                req.onsuccess = () => resolve(req.result ? req.result.blob : null);
+                req.onerror = () => reject(null);
+            });
+        }
+
+        // --- STATE & MEMORY ---
+        let pendingFiles = {}; // RAM Cache
+
+        const defaultVideos = [
+            { id: "SYS_001", name: "SKATE_COMPILATION_01.MP4", loc: "CENTRO", size: "124MB", date: "TODAY", saved: true },
+            { id: "SYS_002", name: "STREET_ART_DOC.MOV", loc: "ZONA_SUL", size: "450MB", date: "YESTERDAY", saved: true },
+            { id: "SYS_003", name: "UNKOWN_SIGNAL.REC", loc: "---", size: "2MB", date: "2023-11-02", saved: true },
+            { id: "SYS_004", name: "BAND_PRACTICE_GARAGE.WAV", loc: "RESIDENCIAL", size: "45MB", date: "2023-10-15", saved: true }
+        ];
+
+        let dbVideos = JSON.parse(localStorage.getItem('fck_videos_v6'));
+        if (!dbVideos) {
+            dbVideos = defaultVideos;
+            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
+        } else {
+            dbVideos = dbVideos.filter(v => v.saved === true);
+            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
+        }
+
+        function renderVideoList() {
+            const listBody = document.getElementById('video-list-body');
+            listBody.innerHTML = '';
+            
+            dbVideos.forEach((vid) => {
+                const row = document.createElement('tr');
+                let saveBtnHtml = vid.saved 
+                    ? `<button class="btn-save-static" disabled>[SAVED]</button>` 
+                    : `<button class="btn-save unsaved" onclick="openSaveModal('${vid.id}')">[✔]</button>`;
+
+                row.innerHTML = `
+                    <td class="clickable-title" onclick="playVideo('${vid.id}')">${vid.name}</td>
+                    <td style="color:#666;">${vid.loc}</td>
+                    <td style="color:#666;">${vid.size}</td>
+                    <td class="col-date" style="color:#666;">${vid.date}</td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        ${saveBtnHtml}
+                        <button class="btn-del" onclick="openDeleteModal('${vid.id}')">[X]</button>
+                    </td>
+                `;
+                listBody.appendChild(row);
+            });
+            
+            const viewCount = document.getElementById('stat-uploads-count-view');
+            if(viewCount) viewCount.innerText = dbVideos.length;
+        }
+
+        // --- PROFILE SYSTEM ---
+        const avatars = [
+`  __
+ /o \\
+( \\/ )
+/ /\\ \\
+\\_) (_/`,
+` /---\\
+ |0.0|
+ |___|
+  | |
+ /   \\`,
+`  ___
+ /   \\
+|  O  |
+ \\___/
+  /|\\`,
+`  ,-.
+ ( O )
+  \`-'`,
+` [|||]
+ |###|
+ |___|`
+        ];
+        
+        // Color Map
+        const asciiColors = {
+            'green': 'var(--accent-green)',
+            'red': 'var(--accent-red)',
+            'cyan': '#00ffff',
+            'yellow': '#ffff00',
+            'purple': '#bd00ff',
+            'white': '#e0e0e0'
+        };
+        
+        // Load Profile Data
+        let userProfile = JSON.parse(localStorage.getItem('fck_profile_v1')) || {
+            name: "GUEST_USER",
+            bio: "",
+            avatarIndex: 0,
+            banner: "default",
+            asciiColor: "green" // Default color
+        };
+        
+        // Temp state for editing
+        let tempProfile = { ...userProfile };
+
+        function renderProfile() {
+            // Update VIEW elements
+            document.getElementById('view-username').innerText = userProfile.name;
+            document.getElementById('view-bio').innerText = userProfile.bio || "NO BIO SET.";
+            document.getElementById('avatar-view-display').innerText = avatars[userProfile.avatarIndex];
+            document.getElementById('stat-uploads-count-view').innerText = dbVideos.length;
+
+            // Apply saved color to View mode
+            const colorVar = asciiColors[userProfile.asciiColor] || asciiColors['green'];
+            document.getElementById('avatar-view-display').style.color = colorVar;
+
+            // Update EDIT elements
+            document.getElementById('profile-name').value = userProfile.name;
+            document.getElementById('profile-bio').value = userProfile.bio;
+            document.getElementById('profile-banner').value = userProfile.banner;
+            document.getElementById('profile-color').value = userProfile.asciiColor || 'green';
+            document.getElementById('avatar-edit-display').innerText = avatars[userProfile.avatarIndex];
+            document.getElementById('avatar-edit-display').style.color = colorVar;
+            
+            // Sync temp state
+            tempProfile = { ...userProfile };
+            
+            applyBanner(userProfile.banner);
+        }
+
+        function toggleProfileEdit(isEdit) {
+            const viewMode = document.getElementById('profile-view');
+            const editMode = document.getElementById('profile-edit');
+            
+            if(isEdit) {
+                viewMode.style.display = 'none';
+                editMode.style.display = 'grid';
+                previewBanner(); 
+                previewColor();
+            } else {
+                editMode.style.display = 'none';
+                viewMode.style.display = 'grid';
+                applyBanner(userProfile.banner);
+            }
+        }
+
+        function cycleAvatar(dir) {
+            tempProfile.avatarIndex = (tempProfile.avatarIndex + dir + avatars.length) % avatars.length;
+            document.getElementById('avatar-edit-display').innerText = avatars[tempProfile.avatarIndex];
+        }
+
+        function applyBanner(bannerName) {
+            const card = document.getElementById('profile-card');
+            card.classList.remove('banner-matrix', 'banner-error', 'banner-noise');
+            if(bannerName !== 'default') {
+                card.classList.add('banner-' + bannerName);
+            }
+        }
+
+        function previewBanner() {
+            const banner = document.getElementById('profile-banner').value;
+            applyBanner(banner);
+        }
+
+        function previewColor() {
+            const colorKey = document.getElementById('profile-color').value;
+            const colorVar = asciiColors[colorKey] || asciiColors['green'];
+            document.getElementById('avatar-edit-display').style.color = colorVar;
+        }
+
+        function saveProfile() {
+            userProfile.name = document.getElementById('profile-name').value;
+            userProfile.bio = document.getElementById('profile-bio').value;
+            userProfile.banner = document.getElementById('profile-banner').value;
+            userProfile.asciiColor = document.getElementById('profile-color').value;
+            userProfile.avatarIndex = tempProfile.avatarIndex;
+            
+            localStorage.setItem('fck_profile_v1', JSON.stringify(userProfile));
+            
+            renderProfile(); // Update view with new data
+            toggleProfileEdit(false); // Switch back to view
+        }
+        
+        function cancelEdit() {
+            tempProfile = { ...userProfile };
+            renderProfile(); // Resets inputs to saved values
+            toggleProfileEdit(false);
+        }
+
+        // --- HOME SLIDER ---
+        let currentFeatIndex = 0;
+        function renderFeatured() {
+            const container = document.getElementById('featured-content');
+            const label = document.getElementById('featured-label');
+
+            if (dbVideos.length === 0) {
+                container.innerHTML = `<div style="font-size: 3rem; margin-bottom: 10px; color: var(--accent-red);">⚠</div><div style="font-family: var(--font-display); font-style: italic; color: var(--text-dim);">SYSTEM_OFFLINE</div>`;
+                label.innerText = `[0/0] NO_DATA_FOUND // UPLOAD_REQUIRED`;
+                return;
+            }
+
+            if (currentFeatIndex >= dbVideos.length) currentFeatIndex = 0;
+            const vid = dbVideos[currentFeatIndex];
+
+            container.innerHTML = `
+                <div class="clickable-title" style="font-size: 3rem; margin-bottom: 10px; cursor: pointer;" onclick="playVideo('${vid.id}')">►</div>
+                <div class="clickable-title" onclick="playVideo('${vid.id}')" style="font-family: var(--font-display); font-style: italic; cursor: pointer;">${vid.name}</div>
+            `;
+            label.innerText = `[${currentFeatIndex + 1}/${dbVideos.length}] LOC: ${vid.loc} // DATE: ${vid.date}`;
+        }
+        function nextVideo() { if (dbVideos.length > 0) { currentFeatIndex = (currentFeatIndex + 1) % dbVideos.length; renderFeatured(); } }
+        function prevVideo() { if (dbVideos.length > 0) { currentFeatIndex = (currentFeatIndex - 1 + dbVideos.length) % dbVideos.length; renderFeatured(); } }
+
+        // --- MODALS ACTIONS ---
+
+        // 1. SAVE
+        let videoToSaveId = null;
+        window.openSaveModal = (id) => { videoToSaveId = id; document.getElementById('save-modal').style.display = 'flex'; };
+        window.closeSaveModal = () => { document.getElementById('save-modal').style.display = 'none'; videoToSaveId = null; };
+
+        window.confirmSave = async function() {
+            if (!videoToSaveId) return;
+            const strId = String(videoToSaveId);
+            const file = pendingFiles[strId]; 
+            
+            if (!file) {
+                alert("ERROR: FILE NOT IN MEMORY. CANNOT SAVE.");
+                closeSaveModal();
+                return;
+            }
+
+            try {
+                await dbSaveVideo({ id: strId, blob: file });
+                const vidIndex = dbVideos.findIndex(v => v.id === strId);
+                if (vidIndex !== -1) {
+                    dbVideos[vidIndex].saved = true;
+                    localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
+                }
+                delete pendingFiles[strId];
+                renderVideoList();
+                renderFeatured();
+                closeSaveModal();
+            } catch (e) {
+                console.error(e);
+                alert("SAVE FAILED.");
+            }
+        };
+
+        // 2. DELETE
+        let videoToDeleteId = null;
+        window.openDeleteModal = (id) => { videoToDeleteId = id; document.getElementById('confirm-modal').style.display = 'flex'; };
+        window.closeConfirmModal = () => { document.getElementById('confirm-modal').style.display = 'none'; videoToDeleteId = null; };
+
+        window.confirmDelete = async function() {
+            if (!videoToDeleteId) return;
+            const strId = String(videoToDeleteId);
+            
+            dbVideos = dbVideos.filter(v => String(v.id) !== strId);
+            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
+            if(pendingFiles[strId]) delete pendingFiles[strId];
+
+            renderVideoList();
+            renderFeatured();
+            closeConfirmModal();
+            renderProfile(); // Update profile stats
+
+            try { await dbDeleteVideo(strId); } catch(e) {}
+        };
+
+        // 3. PLAYBACK (CRITICAL FIX FOR REFRESH)
+        window.playVideo = async function(id) {
+            const strId = String(id);
+            const vid = dbVideos.find(v => String(v.id) === strId);
+            if (!vid) return;
+
+            const playerModal = document.getElementById('player-modal');
+            const playerViewport = document.getElementById('player-viewport');
+            const playerStatus = document.getElementById('player-status');
+            const playerTitle = document.getElementById('player-title');
+
+            playerTitle.innerText = "PLAYING: " + vid.name;
+            playerModal.style.display = 'flex';
+            playerViewport.innerHTML = '<div class="noise-overlay"></div><div style="color:white; z-index:2;">BUFFERING...</div>';
+            
+            const playBlob = (blob, source) => {
+                const url = URL.createObjectURL(blob);
+                const videoEl = document.createElement('video');
+                videoEl.src = url;
+                videoEl.controls = true;
+                videoEl.autoplay = true;
+                videoEl.style.zIndex = "5";
+                playerViewport.innerHTML = '<div class="noise-overlay"></div>';
+                playerViewport.appendChild(videoEl);
+                playerStatus.innerText = "STATUS: PLAYING // SOURCE: " + source;
+            };
+
+            // CASE A: File is in RAM
+            if (pendingFiles[strId]) {
+                playBlob(pendingFiles[strId], "RAM_CACHE");
+                return;
+            }
+
+            // CASE B: File is Saved
+            if (vid.saved) {
+                try {
+                    playerStatus.innerText = "STATUS: READING_DISK...";
+                    const blob = await dbGetVideo(strId);
+                    if (blob) {
+                        playBlob(blob, "PERSISTENT_STORAGE");
+                    } else {
+                        throw new Error("File missing from DB");
+                    }
+                } catch (e) {
+                    playerViewport.innerHTML = `<div class="noise-overlay"></div><div style="text-align:center; color: var(--accent-red); z-index:2;"><h2>⚠</h2><p>DATA CORRUPTED</p></div>`;
+                    playerStatus.innerText = "STATUS: READ_ERROR";
+                }
+                return;
+            }
+
+            // CASE C: Default/Fake file
+            playerViewport.innerHTML = `<div class="noise-overlay"></div><div style="text-align:center; color: var(--accent-red); z-index:2;"><h2>⚠</h2><p>FILE MISSING</p></div>`;
+            playerStatus.innerText = "STATUS: 404";
+        };
+
+        window.closePlayerModal = function() {
+            document.getElementById('player-viewport').innerHTML = '';
+            document.getElementById('player-modal').style.display = 'none';
+        };
+
+        // 4. UPLOAD
+        window.openUploadModal = () => { document.getElementById('upload-modal').style.display = 'flex'; };
+        window.closeUploadModal = () => { document.getElementById('upload-modal').style.display = 'none'; };
+
+        window.submitUpload = function() {
+            const fileInput = document.getElementById('upload-file');
+            const locInput = document.getElementById('upload-loc');
+            
+            if(fileInput.files.length === 0) return alert("NO FILE");
+
+            const file = fileInput.files[0];
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1) + "MB";
+            const newId = String(Date.now());
+
+            pendingFiles[newId] = file;
+
+            const newVideo = {
+                id: newId,
+                name: file.name.toUpperCase(),
+                loc: locInput.value.toUpperCase() || "UNKNOWN",
+                size: fileSizeMB,
+                date: new Date().toLocaleDateString('pt-BR'),
+                saved: false
+            };
+
+            dbVideos.unshift(newVideo);
+            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
+
+            renderVideoList();
+            renderFeatured();
+            closeUploadModal();
+            navigate('videos');
+        };
+
+        // INIT
+        renderFeatured();
+        renderVideoList();
+        renderProfile();
+        
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('pt-BR');
+        }, 1000);
+
+        // CURSOR
+        const cursorOuter = document.getElementById('cursor-outer');
+        const cursorInner = document.getElementById('cursor-inner');
+        document.addEventListener('mousemove', (e) => {
+            cursorInner.style.left = e.clientX + 'px';
+            cursorInner.style.top = e.clientY + 'px';
+            setTimeout(() => { cursorOuter.style.left = e.clientX + 'px'; cursorOuter.style.top = e.clientY + 'px'; }, 50);
+        });
+
+    </script>
+</body>
+</html>

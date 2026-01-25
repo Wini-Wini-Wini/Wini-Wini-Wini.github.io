@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="dogs 1.png">
-    <title>FCK THE WRLD // SYSTEM</title>
+    <title>FCK THE WRLD // SYSTEM CLOUD</title>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* --- CORE RESET & VARIABLES --- */
         :root {
@@ -23,7 +25,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Hide default cursor */
+            cursor: none;
         }
 
         body {
@@ -79,7 +81,6 @@
             position: relative;
         }
 
-        /* --- HEADER & ANIMATED TITLE --- */
         header {
             grid-column: 1 / -1;
             border-bottom: var(--grid-line);
@@ -203,8 +204,8 @@
             text-shadow: 2px 0 var(--accent-red), -2px 0 var(--accent-green);
         }
 
-        .flash-left { left: 0; border-right: 1px dashed rgba(50,50,50,0); }
-        .flash-right { right: 0; border-left: 1px dashed rgba(50,50,50,0); }
+        .flash-left { left: 0; }
+        .flash-right { right: 0; }
 
         .video-label {
             position: absolute; bottom: -30px; left: 0; font-size: 0.8rem; color: var(--text-dim);
@@ -235,28 +236,12 @@
 
         .alias-display { font-size: 10px; color: var(--accent-red); display: block; margin-top: 2px; }
 
-        /* BUTTONS */
         .btn-del {
             background: transparent; color: var(--accent-red); border: 1px solid var(--accent-red);
             padding: 2px 5px; font-size: 10px; font-family: var(--font-mono); opacity: 0.5;
-            transition: all 0.2s; cursor: none; display: inline-block; margin-left: 5px;
+            transition: all 0.2s; display: inline-block; margin-left: 5px;
         }
         .btn-del:hover { opacity: 1; background: var(--accent-red); color: #000; }
-
-        .btn-save {
-            background: transparent; color: var(--accent-green); border: 1px solid var(--accent-green);
-            padding: 2px 5px; font-size: 10px; font-family: var(--font-mono); opacity: 1;
-            transition: all 0.2s; cursor: none; display: inline-block; text-shadow: 0 0 5px var(--accent-green);
-        }
-        .btn-save.unsaved { animation: pulse-green 1s infinite; background: rgba(0, 255, 65, 0.1); }
-        .btn-save:hover { opacity: 1; background: var(--accent-green); color: #000; }
-        .btn-save-static { background: transparent; color: #333; border: 1px solid #333; padding: 2px 5px; font-size: 10px; font-family: var(--font-mono); cursor: none; display: inline-block; }
-
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(0, 255, 65, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); }
-        }
 
         /* --- PROFILE --- */
         #page-profile { padding: 40px; align-items: center; }
@@ -270,12 +255,11 @@
         .profile-left-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
         .profile-pic {
             width: 150px; height: 150px; border: 1px solid var(--text-dim); display: flex; justify-content: center; align-items: center;
-            font-size: 8px; white-space: pre; overflow: hidden; color: var(--accent-green); background: #000; font-family: var(--font-mono); line-height: 8px; transition: color 0.2s;
+            font-size: 8px; white-space: pre; overflow: hidden; color: var(--accent-green); background: #000; font-family: var(--font-mono); line-height: 8px;
         }
 
         .avatar-controls { display: flex; justify-content: space-between; width: 100%; padding: 0 10px; }
-        .avatar-btn { background: transparent; border: 1px solid var(--text-dim); color: var(--text-main); padding: 2px 8px; font-size: 12px; cursor: none; }
-        .avatar-btn:hover { background: var(--text-dim); color: #000; }
+        .avatar-btn { background: transparent; border: 1px solid var(--text-dim); color: var(--text-main); padding: 2px 8px; font-size: 12px; }
 
         .profile-info { display: flex; flex-direction: column; gap: 15px; }
         .profile-name-view { font-size: 2.5rem; font-family: var(--font-display); border-bottom: 1px solid var(--text-dim); padding-bottom: 5px; margin-bottom: 5px; color: var(--text-main); }
@@ -285,7 +269,7 @@
         .profile-label { font-size: 10px; color: var(--text-dim); }
         .profile-input { background: transparent; border: none; border-bottom: 1px solid var(--text-dim); color: var(--text-main); font-family: var(--font-display); font-size: 2rem; width: 100%; outline: none; }
         .profile-textarea { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main); font-family: var(--font-mono); padding: 10px; width: 100%; min-height: 80px; resize: none; outline: none; font-size: 12px; }
-        .banner-select { background: #000; color: var(--text-main); border: 1px solid var(--text-dim); padding: 5px; font-family: var(--font-mono); font-size: 12px; outline: none; width: 100%; cursor: none; }
+        .banner-select { background: #000; color: var(--text-main); border: 1px solid var(--text-dim); padding: 5px; font-family: var(--font-mono); font-size: 12px; width: 100%; }
 
         .stat-row { display: flex; justify-content: space-between; color: var(--text-dim); font-size: 12px; border-bottom: 1px dashed #222; padding-bottom: 2px; }
         .stat-val { color: var(--text-main); }
@@ -293,12 +277,21 @@
         /* --- MODALS --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; display: none; justify-content: center; align-items: center; }
         .modal-window { width: 400px; border: 1px solid var(--text-main); background: #000; padding: 20px; box-shadow: 10px 10px 0 var(--border-color); position: relative; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 10px; color: var(--text-dim); margin-bottom: 5px; }
+        .form-input { width: 100%; background: #111; border: 1px solid #333; color: #fff; padding: 10px; font-family: var(--font-mono); outline: none; }
+
         .player-window { width: 90%; max-width: 800px; padding: 0; border: 1px solid var(--text-main); }
         .player-header { background: var(--text-main); color: #000; padding: 5px 10px; display: flex; justify-content: space-between; font-weight: bold; }
-        .close-icon { cursor: none; padding: 0 5px; background: var(--accent-red); color: white; border: none; }
+        .close-icon { padding: 0 5px; background: var(--accent-red); color: white; border: none; }
         .video-viewport { width: 100%; aspect-ratio: 16/9; background: #111; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         .video-viewport video { width: 100%; height: 100%; object-fit: contain; }
-        .noise-overlay { width: 100%; height: 100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); opacity: 0.1; position: absolute; pointer-events: none; }
+
+        .loading-overlay { 
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.8); display: none; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 100;
+        }
 
         footer { grid-column: 1 / -1; border-top: var(--grid-line); padding: 10px 20px; display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); }
 
@@ -306,7 +299,7 @@
 
         @media (max-width: 768px) {
             .app-container { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; margin: 0; border: none; }
-            aside { flex-direction: row; border-bottom: var(--grid-line); border-right: none; padding: 10px; }
+            aside { flex-direction: row; border-bottom: var(--grid-line); border-right: none; padding: 10px; overflow-x: auto; gap: 20px; }
             .profile-mode-container { grid-template-columns: 1fr; }
         }
     </style>
@@ -323,7 +316,7 @@
                 <h1>FCK THE<br>WRLD.</h1>
             </div>
             <div class="sys-status">
-                <p>SERVER: ONLINE <span class="status-light"></span></p>
+                <p>CLOUD SYNC: ACTIVE <span class="status-light"></span></p>
                 <p id="clock">00:00:00</p>
             </div>
         </header>
@@ -334,9 +327,9 @@
                 <a href="#" class="nav-link" onclick="navigate('videos')">VIDEOS</a>
                 <a href="#" class="nav-link" onclick="navigate('profile')">PROFILE</a>
             </nav>
-            <div style="font-size: 10px; color: #444; margin-top: auto;">
-                BUILD: 2026.10<br>
-                TERM_ID: 99X
+            <div style="font-size: 10px; color: #444; margin-top: auto;" id="system-info">
+                ID: LOADING...<br>
+                STORAGE: SUPABASE_V1
             </div>
         </aside>
 
@@ -348,15 +341,15 @@
                     <div id="home-miniature-container" style="width:100%; height:100%; position:absolute; top:0; left:0;"></div>
                     <div class="home-video-content" id="featured-content"></div>
                     <div class="flash-zone flash-right" onclick="nextVideo()">&gt;</div>
-                    <div class="video-label" id="featured-label">LOADING...</div>
+                    <div class="video-label" id="featured-label">INITIALIZING...</div>
                 </div>
             </section>
 
             <!-- 2. VIDEOS -->
             <section id="page-videos" class="page-section">
                 <div class="upload-bar">
-                    <span>DIR: /PUBLIC/UPLOADS/</span>
-                    <button class="btn-upload" onclick="openUploadModal()">UPLOAD_VIDEO.EXE</button>
+                    <span>DIR: /CLOUD/PUBLIC/</span>
+                    <button class="btn-upload" onclick="openUploadModal()">UPLOAD_TO_CLOUD.EXE</button>
                 </div>
                 <table class="file-table">
                     <thead>
@@ -364,7 +357,7 @@
                             <th>IDENTIFIER / ALIAS</th>
                             <th>LOC</th>
                             <th>SIZE</th>
-                            <th class="col-date">DATE</th>
+                            <th>DATE</th>
                             <th style="width: 80px; text-align: center;">ACT</th>
                         </tr>
                     </thead>
@@ -375,7 +368,6 @@
             <!-- 3. PROFILE -->
             <section id="page-profile" class="page-section">
                 <div id="profile-card" class="profile-card">
-                    <!-- VIEW MODE -->
                     <div id="profile-view" class="profile-mode-container">
                         <div class="profile-left-col">
                             <div class="profile-pic" id="avatar-view-display"></div>
@@ -386,14 +378,13 @@
                                 <div id="view-bio" class="profile-bio-view"></div>
                             </div>
                             <div style="border-top: 1px solid #333; padding-top: 10px; margin-top: auto;">
-                                <div class="stat-row"><span>STATUS</span><span class="stat-val">ONLINE</span></div>
-                                <div class="stat-row"><span>TOTAL UPLOADS</span><span id="stat-uploads-count-view" class="stat-val">0</span></div>
+                                <div class="stat-row"><span>STATUS</span><span class="stat-val">SYNCED</span></div>
+                                <div class="stat-row"><span>CLOUD UPLOADS</span><span id="stat-uploads-count-view" class="stat-val">0</span></div>
                             </div>
                             <button class="btn-upload" style="width: 100%; margin-top: 10px;" onclick="toggleProfileEdit(true)">EDIT_PROFILE.EXE</button>
                         </div>
                     </div>
 
-                    <!-- EDIT MODE -->
                     <div id="profile-edit" class="profile-mode-container" style="display:none;">
                         <div class="profile-left-col">
                             <div class="profile-pic" id="avatar-edit-display"></div>
@@ -432,7 +423,7 @@
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: auto;">
                                 <button class="btn-upload" style="flex: 1; background: #333;" onclick="toggleProfileEdit(false)">CANCEL</button>
-                                <button class="btn-upload" style="flex: 2; background: var(--accent-green); color: #000;" onclick="saveProfile()">SAVE CHANGES</button>
+                                <button class="btn-upload" style="flex: 2; background: var(--accent-green); color: #000;" onclick="saveProfile()">SYNC CHANGES</button>
                             </div>
                         </div>
                     </div>
@@ -441,21 +432,25 @@
         </main>
 
         <footer>
-            <span>SYSTEM READY.</span>
-            <span>FCK THE WRLD // PERSISTENT SYNC</span>
+            <span>SYSTEM CONNECTED.</span>
+            <span id="sync-status">SYNC: IDLE</span>
         </footer>
     </div>
 
     <!-- MODALS -->
     <div class="modal-overlay" id="upload-modal">
         <div class="modal-window">
-            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">> INITIATE_UPLOAD</h3>
+            <div class="loading-overlay" id="upload-loading">
+                <div style="color: var(--accent-green); font-size: 2rem; margin-bottom: 10px;">UPLOADING...</div>
+                <div id="upload-progress" style="color: var(--text-dim)">0%</div>
+            </div>
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">> CLOUD_WRITE</h3>
             <div class="form-group">
                 <label class="form-label">SELECT_FILE</label>
                 <input type="file" id="upload-file" class="form-input" accept="video/*">
             </div>
             <div class="form-group">
-                <label class="form-label">ALIAS_TITLE (OPTIONAL)</label>
+                <label class="form-label">ALIAS_TITLE</label>
                 <input type="text" id="upload-alias" class="form-input" placeholder="EX: NIGHT_SESSION_01">
             </div>
             <div class="form-group">
@@ -464,19 +459,7 @@
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: 20px;">
                 <button class="btn-upload" style="background: var(--accent-red); color: #fff;" onclick="closeUploadModal()">CANCEL</button>
-                <button class="btn-upload" onclick="submitUpload()">CONFIRM UPLOAD</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SAVE CONFIRM MODAL -->
-    <div class="modal-overlay" id="save-modal">
-        <div class="modal-window" style="border-color: var(--accent-green);">
-            <h3 style="margin-bottom: 20px; border-bottom: 1px solid var(--accent-green); padding-bottom: 10px; color: var(--accent-green);">> SYSTEM_WRITE</h3>
-            <div style="margin-bottom: 20px;">COMMIT FILE TO PERMANENT STORAGE?</div>
-            <div style="display: flex; justify-content: space-between;">
-                <button class="btn-upload" style="background: #333;" onclick="closeSaveModal()">CANCEL</button>
-                <button class="btn-upload" style="background: var(--accent-green); color:#000;" onclick="confirmSave()">SAVE TO DB</button>
+                <button class="btn-upload" onclick="submitUpload()">PUSH TO CLOUD</button>
             </div>
         </div>
     </div>
@@ -492,189 +475,347 @@
     </div>
 
     <script>
-        const DB_NAME = 'FCK_WRLD_SYSTEM_V6';
-        const STORE_NAME = 'videos';
-        let dbPromise = new Promise((resolve) => {
-            const request = indexedDB.open(DB_NAME, 1);
-            request.onupgradeneeded = (e) => e.target.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-            request.onsuccess = (e) => resolve(e.target.result);
-        });
+        // --- SUPABASE CONFIGURATION ---
+        // ⚠️ ATENÇÃO: Verifique se esta chave começa com 'eyJ'. Se não, você copiou a chave errada.
+        // Vá em Settings > API > Anon Public Key no seu dashboard.
+        const SUPABASE_URL = "https://enzfofrxjlqttgmlhtld.supabase.co"; 
+        const SUPABASE_KEY = "sb_publishable_noWVHxD8vDNDBRlqi_ARnA_Jdzt6c5L"; // ESSA CHAVE PARECE INCORRETA. CORRIJA NO DASHBOARD.
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function dbSaveVideo(record) {
-            const db = await dbPromise;
-            return new Promise((r) => {
-                const tx = db.transaction([STORE_NAME], "readwrite");
-                tx.objectStore(STORE_NAME).put(record).onsuccess = () => r(true);
-            });
+        let cloudVideos = [];
+        let userProfile = { id: 'main_user', name: "USER", bio: "ROOT ACCESS GRANTED.", avatarIndex: 0, banner: "default", asciiColor: "green" };
+
+        // --- INITIALIZATION ---
+        async function init() {
+            updateSyncStatus('FETCHING DATA...');
+            try {
+                await loadProfile();
+                await loadVideos();
+                renderProfile();
+                renderVideoList();
+                renderFeatured();
+                updateSyncStatus('IDLE');
+                const sysInfo = document.getElementById('system-info');
+                if(sysInfo) sysInfo.innerHTML = `USER: ${userProfile.name}<br>SESSION: ${Math.random().toString(36).substring(7).toUpperCase()}`;
+            } catch (err) {
+                console.error("Init failed:", err);
+                updateSyncStatus('CONN_ERR');
+            }
         }
 
-        async function dbGetVideo(id) {
-            const db = await dbPromise;
-            return new Promise((r) => {
-                db.transaction([STORE_NAME], "readonly").objectStore(STORE_NAME).get(String(id)).onsuccess = (e) => r(e.target.result ? e.target.result.blob : null);
-            });
+        async function loadVideos() {
+            const { data, error } = await supabaseClient.from('videos').select('*').order('created_at', { ascending: false });
+            if (error) {
+                console.error("Load Videos Error:", error);
+                // Não alertar aqui para não bloquear a UI na inicialização
+            } else {
+                cloudVideos = data || [];
+            }
         }
 
-        async function dbDeleteVideo(id) {
-            const db = await dbPromise;
-            return new Promise((r) => {
-                db.transaction([STORE_NAME], "readwrite").objectStore(STORE_NAME).delete(String(id)).onsuccess = () => r(true);
-            });
+        async function loadProfile() {
+            const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', 'main_user').single();
+            if (!error && data) userProfile = data;
         }
 
-        let pendingFiles = {};
-        let dbVideos = JSON.parse(localStorage.getItem('fck_videos_v6')) || [];
+        // --- CORE ACTIONS ---
+        async function submitUpload() {
+            const fileInput = document.getElementById('upload-file');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("NO FILE SELECTED");
+                return;
+            }
 
+            const loading = document.getElementById('upload-loading');
+            loading.style.display = 'flex';
+
+            const id = Date.now().toString();
+            // Sanitizando nome do arquivo para evitar erros de URL
+            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+            const filePath = `videos/${id}_${cleanName}`;
+
+            try {
+                // 1. Upload to Storage
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('videos')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error("Storage Error:", uploadError);
+                    alert("STORAGE ERROR: " + uploadError.message + "\n\n(Verifique se criou a Policy no Storage para 'anon' users com INSERT/SELECT)");
+                    loading.style.display = 'none';
+                    return;
+                }
+
+                // 2. Get Public URL
+                const { data: publicUrlData } = supabaseClient.storage.from('videos').getPublicUrl(filePath);
+                const publicUrl = publicUrlData.publicUrl;
+
+                // 3. Save to Database
+                const videoMetadata = {
+                    id: id,
+                    name: file.name.toUpperCase(),
+                    alias: document.getElementById('upload-alias').value.toUpperCase() || null,
+                    loc: document.getElementById('upload-loc').value.toUpperCase() || "UNKNOWN",
+                    size: (file.size / 1048576).toFixed(1) + "MB",
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    url: publicUrl
+                };
+
+                const { error: dbError } = await supabaseClient.from('videos').insert([videoMetadata]);
+
+                if (dbError) {
+                    console.error("DB Error:", dbError);
+                    alert("DATABASE ERROR: " + dbError.message + "\n\n(Verifique se criou a Policy na Tabela 'videos' para 'anon' users)");
+                } else {
+                    cloudVideos.unshift(videoMetadata);
+                    renderVideoList();
+                    renderFeatured();
+                    closeUploadModal();
+                }
+            } catch (err) {
+                console.error("Critical Catch:", err);
+                alert("CRITICAL ERROR: " + err.message);
+            }
+            
+            loading.style.display = 'none';
+        }
+
+        async function deleteVideo(id, url) {
+            if(!confirm("ERASE DATA FROM CLOUD?")) return;
+            
+            updateSyncStatus('DELETING...');
+            try {
+                // Delete from Database
+                const { error: dbError } = await supabaseClient.from('videos').delete().eq('id', id);
+                
+                if (dbError) {
+                    alert("DB DELETE ERROR: " + dbError.message);
+                    updateSyncStatus('ERR');
+                    return;
+                }
+                
+                // Delete from Storage
+                // Extrair o path relativo do URL completo
+                const urlObj = new URL(url);
+                // O path geralmente é algo como /storage/v1/object/public/videos/arquivo.mp4
+                // Precisamos de 'videos/arquivo.mp4' ou apenas 'arquivo.mp4' dependendo de como o método remove espera.
+                // O método remove espera o path dentro do bucket.
+                const pathParts = url.split('/videos/'); // Divide na parte do bucket
+                if (pathParts.length > 1) {
+                    const relativePath = decodeURIComponent(pathParts[1]); // Pega tudo depois de /videos/
+                     const { error: storageError } = await supabaseClient.storage.from('videos').remove([relativePath]);
+                     if(storageError) console.warn("Storage delete warn:", storageError);
+                }
+
+                cloudVideos = cloudVideos.filter(v => v.id !== id);
+                renderVideoList();
+                renderFeatured();
+                updateSyncStatus('IDLE');
+            } catch (err) {
+                console.error("Delete failed:", err);
+                alert("DELETE FAILED: " + err.message);
+                updateSyncStatus('ERR');
+            }
+        }
+
+        async function saveProfile() {
+            updateSyncStatus('SYNCING PROFILE...');
+            userProfile.name = document.getElementById('profile-name').value;
+            userProfile.bio = document.getElementById('profile-bio-input').value;
+            userProfile.banner = document.getElementById('profile-banner').value;
+            userProfile.asciiColor = document.getElementById('profile-color').value;
+            
+            const { error } = await supabaseClient.from('profiles').upsert([userProfile]);
+            
+            if(!error) {
+                renderProfile();
+                toggleProfileEdit(false);
+            } else {
+                alert("SYNC FAILED: " + error.message);
+            }
+            updateSyncStatus('IDLE');
+        }
+
+        // --- UI RENDERING ---
         function renderVideoList() {
             const listBody = document.getElementById('video-list-body');
-            listBody.innerHTML = dbVideos.map(vid => `
+            if(!listBody) return;
+
+            listBody.innerHTML = cloudVideos.map(vid => `
                 <tr>
-                    <td class="clickable-title" onclick="playVideo('${vid.id}')">
+                    <td class="clickable-title" onclick="playVideo('${vid.url}', '${vid.alias || vid.name}')">
                         ${vid.name}
                         ${vid.alias ? `<span class="alias-display">${vid.alias}</span>` : ''}
                     </td>
                     <td style="color:#666;">${vid.loc}</td>
                     <td style="color:#666;">${vid.size}</td>
                     <td style="color:#666;">${vid.date}</td>
-                    <td style="text-align: center; white-space: nowrap;">
-                        ${vid.saved ? '<button class="btn-save-static" disabled>[SAVED]</button>' : `<button class="btn-save unsaved" onclick="openSaveModal('${vid.id}')">[✔]</button>`}
-                        <button class="btn-del" onclick="confirmDelete('${vid.id}')">[X]</button>
+                    <td style="text-align: center;">
+                        <button class="btn-del" onclick="deleteVideo('${vid.id}', '${vid.url}')">[X]</button>
                     </td>
                 </tr>
             `).join('');
-            document.getElementById('stat-uploads-count-view').innerText = dbVideos.length;
+            const countEl = document.getElementById('stat-uploads-count-view');
+            if(countEl) countEl.innerText = cloudVideos.length;
         }
 
-        // --- PROFILE SYSTEM ---
+        let currentFeatIndex = 0;
+        function renderFeatured() {
+            const container = document.getElementById('featured-content');
+            const label = document.getElementById('featured-label');
+            const miniature = document.getElementById('home-miniature-container');
+            
+            if (!container || !label || !miniature) return;
+
+            if (!cloudVideos.length) { 
+                container.innerHTML = `<div style="color:var(--accent-red)">EMPTY_CLOUD_STORAGE</div>`; 
+                miniature.innerHTML = ''; 
+                label.innerText = "NO DATA FOUND";
+                return; 
+            }
+
+            const vid = cloudVideos[currentFeatIndex % cloudVideos.length];
+            container.innerHTML = `<div class="clickable-title" style="font-size:3rem" onclick="playVideo('${vid.url}', '${vid.alias || vid.name}')">►</div><div style="font-family:var(--font-display); font-style:italic">${vid.alias || vid.name}</div>`;
+            label.innerText = `[${(currentFeatIndex % cloudVideos.length) + 1}/${cloudVideos.length}] LOC: ${vid.loc}`;
+            miniature.innerHTML = `<video class="home-video-miniature" src="${vid.url}" muted autoplay loop></video>`;
+        }
+
+        // --- PROFILE UTILS ---
         const avatars = [`  __\n /o \\\n( \\/ )\n/ /\\ \\\n\\_) (_/`, ` /---\\\n |0.0|\n |___|\n  | |\n /   \\`, `  ___ \n /   \\\n|  O  |\n \\___/\n  /|\\ `, `  ,-.\n ( O )\n  \`-'`];
         const asciiColors = { green: 'var(--accent-green)', red: 'var(--accent-red)', cyan: '#00ffff', white: '#e0e0e0' };
-        let userProfile = JSON.parse(localStorage.getItem('fck_profile_v1')) || { name: "USER", bio: "ROOT ACCESS GRANTED.", avatarIndex: 0, banner: "default", asciiColor: "green" };
-        let tempProfile = { ...userProfile };
 
         function renderProfile() {
-            document.getElementById('view-username').innerText = userProfile.name;
-            document.getElementById('view-bio').innerText = userProfile.bio;
-            document.getElementById('avatar-view-display').innerText = avatars[userProfile.avatarIndex];
-            document.getElementById('avatar-view-display').style.color = asciiColors[userProfile.asciiColor];
+            const vName = document.getElementById('view-username');
+            const vBio = document.getElementById('view-bio');
+            const vAvatar = document.getElementById('avatar-view-display');
             
-            document.getElementById('profile-name').value = userProfile.name;
-            document.getElementById('profile-bio-input').value = userProfile.bio;
-            document.getElementById('profile-banner').value = userProfile.banner;
-            document.getElementById('profile-color').value = userProfile.asciiColor;
-            document.getElementById('avatar-edit-display').innerText = avatars[userProfile.avatarIndex];
-            document.getElementById('avatar-edit-display').style.color = asciiColors[userProfile.asciiColor];
+            if (vName) vName.innerText = userProfile.name;
+            if (vBio) vBio.innerText = userProfile.bio;
+            if (vAvatar) {
+                vAvatar.innerText = avatars[userProfile.avatarIndex];
+                vAvatar.style.color = asciiColors[userProfile.asciiColor];
+            }
+            
+            const pName = document.getElementById('profile-name');
+            const pBio = document.getElementById('profile-bio-input');
+            const pBanner = document.getElementById('profile-banner');
+            const pColor = document.getElementById('profile-color');
+            const eAvatar = document.getElementById('avatar-edit-display');
+
+            if (pName) pName.value = userProfile.name;
+            if (pBio) pBio.value = userProfile.bio;
+            if (pBanner) pBanner.value = userProfile.banner;
+            if (pColor) pColor.value = userProfile.asciiColor;
+            if (eAvatar) {
+                eAvatar.innerText = avatars[userProfile.avatarIndex];
+                eAvatar.style.color = asciiColors[userProfile.asciiColor];
+            }
             applyBanner(userProfile.banner);
         }
 
-        window.toggleProfileEdit = (isEdit) => {
-            document.getElementById('profile-view').style.display = isEdit ? 'none' : 'grid';
-            document.getElementById('profile-edit').style.display = isEdit ? 'grid' : 'none';
-            if(!isEdit) renderProfile();
-        };
-
         window.cycleAvatar = (dir) => {
-            tempProfile.avatarIndex = (tempProfile.avatarIndex + dir + avatars.length) % avatars.length;
-            document.getElementById('avatar-edit-display').innerText = avatars[tempProfile.avatarIndex];
+            userProfile.avatarIndex = (userProfile.avatarIndex + dir + avatars.length) % avatars.length;
+            const disp = document.getElementById('avatar-edit-display');
+            if (disp) disp.innerText = avatars[userProfile.avatarIndex];
         };
 
-        window.previewBanner = () => applyBanner(document.getElementById('profile-banner').value);
-        window.previewColor = () => document.getElementById('avatar-edit-display').style.color = asciiColors[document.getElementById('profile-color').value];
+        window.previewBanner = () => {
+            const el = document.getElementById('profile-banner');
+            if (el) applyBanner(el.value);
+        };
+        window.previewColor = () => {
+            const el = document.getElementById('profile-color');
+            const disp = document.getElementById('avatar-edit-display');
+            if (el && disp) disp.style.color = asciiColors[el.value];
+        };
 
         function applyBanner(b) {
             const card = document.getElementById('profile-card');
+            if (!card) return;
             card.classList.remove('banner-matrix', 'banner-error', 'banner-noise');
             if(b !== 'default') card.classList.add('banner-' + b);
         }
 
-        window.saveProfile = () => {
-            userProfile.name = document.getElementById('profile-name').value;
-            userProfile.bio = document.getElementById('profile-bio-input').value;
-            userProfile.banner = document.getElementById('profile-banner').value;
-            userProfile.asciiColor = document.getElementById('profile-color').value;
-            userProfile.avatarIndex = tempProfile.avatarIndex;
-            localStorage.setItem('fck_profile_v1', JSON.stringify(userProfile));
-            toggleProfileEdit(false);
-        };
-
-        // --- CORE ACTIONS ---
-        let currentFeatIndex = 0;
-        async function renderFeatured() {
-            const container = document.getElementById('featured-content');
-            const label = document.getElementById('featured-label');
-            const miniature = document.getElementById('home-miniature-container');
-            if (!dbVideos.length) { container.innerHTML = `<div style="color:var(--accent-red)">EMPTY_STORAGE</div>`; miniature.innerHTML = ''; return; }
-            const vid = dbVideos[currentFeatIndex % dbVideos.length];
-            container.innerHTML = `<div class="clickable-title" style="font-size:3rem" onclick="playVideo('${vid.id}')">►</div><div style="font-family:var(--font-display); font-style:italic">${vid.alias || vid.name}</div>`;
-            label.innerText = `[${(currentFeatIndex % dbVideos.length) + 1}/${dbVideos.length}] LOC: ${vid.loc}`;
-            const blob = pendingFiles[vid.id] || await dbGetVideo(vid.id);
-            miniature.innerHTML = blob ? `<video class="home-video-miniature" src="${URL.createObjectURL(blob)}" muted autoplay loop></video>` : '';
-        }
-
-        window.submitUpload = async () => {
-            const file = document.getElementById('upload-file').files[0];
-            if (!file) return;
-            const id = String(Date.now());
-            const videoData = { id, name: file.name.toUpperCase(), alias: document.getElementById('upload-alias').value.toUpperCase() || null, loc: document.getElementById('upload-loc').value.toUpperCase() || "UNKNOWN", size: (file.size / 1048576).toFixed(1) + "MB", date: new Date().toLocaleDateString('pt-BR'), timestamp: Date.now(), saved: false };
-            pendingFiles[id] = file;
-            dbVideos.unshift(videoData);
-            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
-            closeUploadModal(); renderVideoList(); renderFeatured(); navigate('videos');
-        };
-
-        window.openSaveModal = (id) => { window.videoToSave = id; document.getElementById('save-modal').style.display = 'flex'; };
-        window.closeSaveModal = () => document.getElementById('save-modal').style.display = 'none';
-        window.confirmSave = async () => {
-            const id = window.videoToSave; const file = pendingFiles[id];
-            if(!file) return closeSaveModal();
-            await dbSaveVideo({ id, blob: file });
-            const idx = dbVideos.findIndex(v => v.id === id);
-            if(idx !== -1) dbVideos[idx].saved = true;
-            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
-            delete pendingFiles[id]; closeSaveModal(); renderVideoList();
-        };
-
-        window.confirmDelete = async (id) => {
-            dbVideos = dbVideos.filter(v => String(v.id) !== String(id));
-            localStorage.setItem('fck_videos_v6', JSON.stringify(dbVideos));
-            await dbDeleteVideo(id); delete pendingFiles[id]; renderVideoList(); renderFeatured();
-        };
-
-        window.playVideo = async (id) => {
-            const vid = dbVideos.find(v => String(v.id) === String(id));
-            const blob = pendingFiles[id] || await dbGetVideo(id);
-            if (!blob) return;
-            document.getElementById('player-title').innerText = vid.alias || vid.name;
-            document.getElementById('player-viewport').innerHTML = `<video src="${URL.createObjectURL(blob)}" controls autoplay></video>`;
-            document.getElementById('player-modal').style.display = 'flex';
-        };
-
+        // --- NAVIGATION & UTILS ---
         window.navigate = (p) => {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            document.getElementById('page-'+p).classList.add('active');
+            const pg = document.getElementById('page-'+p);
+            if (pg) pg.classList.add('active');
+            
             const links = document.querySelectorAll('.nav-link');
-            if(p === 'home') links[0].classList.add('active');
-            if(p === 'videos') links[1].classList.add('active');
-            if(p === 'profile') { links[2].classList.add('active'); toggleProfileEdit(false); }
-            if(p === 'home') renderFeatured();
+            if(p === 'home') { if(links[0]) links[0].classList.add('active'); renderFeatured(); }
+            if(p === 'videos') { if(links[1]) links[1].classList.add('active'); }
+            if(p === 'profile') { if(links[2]) links[2].classList.add('active'); toggleProfileEdit(false); }
+        };
+
+        window.toggleProfileEdit = (isEdit) => {
+            const view = document.getElementById('profile-view');
+            const edit = document.getElementById('profile-edit');
+            if(view) view.style.display = isEdit ? 'none' : 'grid';
+            if(edit) edit.style.display = isEdit ? 'grid' : 'none';
+        };
+
+        window.playVideo = (url, title) => {
+            const t = document.getElementById('player-title');
+            const v = document.getElementById('player-viewport');
+            const m = document.getElementById('player-modal');
+            
+            if(t) t.innerText = title;
+            if(v) v.innerHTML = `<video src="${url}" controls autoplay></video>`;
+            if(m) m.style.display = 'flex';
         };
 
         window.nextVideo = () => { currentFeatIndex++; renderFeatured(); };
-        window.prevVideo = () => { currentFeatIndex = currentFeatIndex <= 0 ? dbVideos.length-1 : currentFeatIndex-1; renderFeatured(); };
-        window.openUploadModal = () => document.getElementById('upload-modal').style.display = 'flex';
-        window.closeUploadModal = () => document.getElementById('upload-modal').style.display = 'none';
-        window.closePlayerModal = () => { document.getElementById('player-modal').style.display = 'none'; document.getElementById('player-viewport').innerHTML = ''; };
+        window.prevVideo = () => { currentFeatIndex = currentFeatIndex <= 0 ? cloudVideos.length-1 : currentFeatIndex-1; renderFeatured(); };
+        window.openUploadModal = () => {
+            const m = document.getElementById('upload-modal');
+            if(m) m.style.display = 'flex';
+        };
+        window.closeUploadModal = () => {
+            const m = document.getElementById('upload-modal');
+            if(m) m.style.display = 'none';
+        };
+        window.closePlayerModal = () => { 
+            const m = document.getElementById('player-modal');
+            const v = document.getElementById('player-viewport');
+            if(m) m.style.display = 'none'; 
+            if(v) v.innerHTML = ''; 
+        };
 
-        setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString(), 1000);
+        function updateSyncStatus(msg) { 
+            const s = document.getElementById('sync-status');
+            if(s) s.innerText = 'SYNC: ' + msg; 
+        }
+
+        setInterval(() => {
+            const c = document.getElementById('clock');
+            if(c) c.innerText = new Date().toLocaleTimeString();
+        }, 1000);
+        
         document.addEventListener('mousemove', (e) => {
-            document.getElementById('cursor-inner').style.left = e.clientX + 'px';
-            document.getElementById('cursor-inner').style.top = e.clientY + 'px';
-            setTimeout(() => { document.getElementById('cursor-outer').style.left = e.clientX + 'px'; document.getElementById('cursor-outer').style.top = e.clientY + 'px'; }, 50);
+            const inner = document.getElementById('cursor-inner');
+            const outer = document.getElementById('cursor-outer');
+            if(inner) {
+                inner.style.left = e.clientX + 'px';
+                inner.style.top = e.clientY + 'px';
+            }
+            if(outer) {
+                setTimeout(() => { 
+                    outer.style.left = e.clientX + 'px'; 
+                    outer.style.top = e.clientY + 'px'; 
+                }, 50);
+            }
         });
 
-        renderVideoList();
-        renderFeatured();
-        renderProfile();
+        // Iniciar Sistema
+        window.onload = init;
     </script>
 </body>
 </html>

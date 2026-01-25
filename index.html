@@ -48,7 +48,7 @@
             background-size: 100% 4px;
             pointer-events: none;
             z-index: 9999;
-            opacity: 0.3;
+            opacity: 0.2; /* Slightly reduced for better readability per design critique */
         }
 
         .cursor-outer {
@@ -476,10 +476,10 @@
 
     <script>
         // --- SUPABASE CONFIGURATION ---
-        // ⚠️ ATENÇÃO: Verifique se esta chave começa com 'eyJ'. Se não, você copiou a chave errada.
+        // ⚠️ ATENÇÃO: Verifique se esta chave começa com 'eyJ'.
         // Vá em Settings > API > Anon Public Key no seu dashboard.
         const SUPABASE_URL = "https://enzfofrxjlqttgmlhtld.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuemZvZnJ4amxxdHRnbWxodGxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMjI1MzEsImV4cCI6MjA4NDY5ODUzMX0.tZ3J9Wxd0f9Ih8Xr7CpnEK2y9EnCen9ijlss-BRekKI"; // ESSA CHAVE PARECE INCORRETA. CORRIJA NO DASHBOARD.
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuemZvZnJ4amxxdHRnbWxodGxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMjI1MzEsImV4cCI6MjA4NDY5ODUzMX0.tZ3J9Wxd0f9Ih8Xr7CpnEK2y9EnCen9ijlss-BRekKI"; // Verifique se esta é a chave correta (Anon/Public).
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -508,7 +508,6 @@
             const { data, error } = await supabaseClient.from('videos').select('*').order('created_at', { ascending: false });
             if (error) {
                 console.error("Load Videos Error:", error);
-                // Não alertar aqui para não bloquear a UI na inicialização
             } else {
                 cloudVideos = data || [];
             }
@@ -531,7 +530,11 @@
             const loading = document.getElementById('upload-loading');
             loading.style.display = 'flex';
 
-            const id = Date.now().toString();
+            // GERAÇÃO DE ID CORRIGIDA PARA UUID
+            // O erro anterior "invalid input syntax for type uuid" ocorria porque
+            // Date.now() não gera um UUID válido. crypto.randomUUID() resolve isso.
+            const id = crypto.randomUUID();
+            
             // Sanitizando nome do arquivo para evitar erros de URL
             const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
             const filePath = `videos/${id}_${cleanName}`;
@@ -547,7 +550,7 @@
 
                 if (uploadError) {
                     console.error("Storage Error:", uploadError);
-                    alert("STORAGE ERROR: " + uploadError.message + "\n\n(Verifique se criou a Policy no Storage para 'anon' users com INSERT/SELECT)");
+                    alert("STORAGE ERROR: " + uploadError.message + "\n\n(Verifique as Policies do Storage)");
                     loading.style.display = 'none';
                     return;
                 }
@@ -571,7 +574,7 @@
 
                 if (dbError) {
                     console.error("DB Error:", dbError);
-                    alert("DATABASE ERROR: " + dbError.message + "\n\n(Verifique se criou a Policy na Tabela 'videos' para 'anon' users)");
+                    alert("DATABASE ERROR: " + dbError.message);
                 } else {
                     cloudVideos.unshift(videoMetadata);
                     renderVideoList();
@@ -601,14 +604,9 @@
                 }
                 
                 // Delete from Storage
-                // Extrair o path relativo do URL completo
-                const urlObj = new URL(url);
-                // O path geralmente é algo como /storage/v1/object/public/videos/arquivo.mp4
-                // Precisamos de 'videos/arquivo.mp4' ou apenas 'arquivo.mp4' dependendo de como o método remove espera.
-                // O método remove espera o path dentro do bucket.
-                const pathParts = url.split('/videos/'); // Divide na parte do bucket
+                const pathParts = url.split('/videos/');
                 if (pathParts.length > 1) {
-                    const relativePath = decodeURIComponent(pathParts[1]); // Pega tudo depois de /videos/
+                    const relativePath = decodeURIComponent(pathParts[1]);
                      const { error: storageError } = await supabaseClient.storage.from('videos').remove([relativePath]);
                      if(storageError) console.warn("Storage delete warn:", storageError);
                 }
@@ -819,4 +817,3 @@
     </script>
 </body>
 </html>
-

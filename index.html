@@ -329,7 +329,7 @@
             </nav>
             <div style="font-size: 10px; color: #444; margin-top: auto;" id="system-info">
                 ID: LOADING...<br>
-                STORAGE: SUPABASE_V1
+                STORAGE: SUPABASE_FIX_UUID
             </div>
         </aside>
 
@@ -519,6 +519,18 @@
         }
 
         // --- CORE ACTIONS ---
+        
+        // FUNÇÃO ROBUSTA PARA GERAR UUID (Evita o erro de timestamp)
+        function uuidv4() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         async function submitUpload() {
             const fileInput = document.getElementById('upload-file');
             const file = fileInput.files[0];
@@ -533,7 +545,8 @@
             // GERAÇÃO DE ID CORRIGIDA PARA UUID
             // O erro anterior "invalid input syntax for type uuid" ocorria porque
             // Date.now() não gera um UUID válido. crypto.randomUUID() resolve isso.
-            const id = crypto.randomUUID();
+            const id = uuidv4();
+            console.log("Gerando ID para upload:", id); // Debug para verificar se está gerando UUID
             
             // Sanitizando nome do arquivo para evitar erros de URL
             const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');

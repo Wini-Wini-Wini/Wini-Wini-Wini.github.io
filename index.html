@@ -48,7 +48,7 @@
             background-size: 100% 4px;
             pointer-events: none;
             z-index: 9999;
-            opacity: 0.2; /* Slightly reduced for better readability per design critique */
+            opacity: 0.2;
         }
 
         .cursor-outer {
@@ -329,7 +329,7 @@
             </nav>
             <div style="font-size: 10px; color: #444; margin-top: auto;" id="system-info">
                 ID: LOADING...<br>
-                STORAGE: SUPABASE_FIX_SCHEMA
+                STORAGE: V3.1_SNAKE_CASE
             </div>
         </aside>
 
@@ -476,15 +476,21 @@
 
     <script>
         // --- SUPABASE CONFIGURATION ---
-        // ⚠️ ATENÇÃO: Verifique se esta chave começa com 'eyJ'.
-        // Vá em Settings > API > Anon Public Key no seu dashboard.
         const SUPABASE_URL = "https://enzfofrxjlqttgmlhtld.supabase.co"; 
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuemZvZnJ4amxxdHRnbWxodGxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMjI1MzEsImV4cCI6MjA4NDY5ODUzMX0.tZ3J9Wxd0f9Ih8Xr7CpnEK2y9EnCen9ijlss-BRekKI"; // Verifique se esta é a chave correta (Anon/Public).
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuemZvZnJ4amxxdHRnbWxodGxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMjI1MzEsImV4cCI6MjA4NDY5ODUzMX0.tZ3J9Wxd0f9Ih8Xr7CpnEK2y9EnCen9ijlss-BRekKI"; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // ATUALIZADO: Usando nomes de colunas em snake_case para compatibilidade SQL
         let cloudVideos = [];
-        let userProfile = { id: 'main_user', name: "USER", bio: "ROOT ACCESS GRANTED.", avatarIndex: 0, banner: "default", asciiColor: "green" };
+        let userProfile = { 
+            id: 'main_user', 
+            name: "USER", 
+            bio: "ROOT ACCESS GRANTED.", 
+            avatar_index: 0,  // alterado de avatarIndex
+            banner: "default", 
+            ascii_color: "green" // alterado de asciiColor
+        };
 
         // --- INITIALIZATION ---
         async function init() {
@@ -515,12 +521,16 @@
 
         async function loadProfile() {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', 'main_user').single();
-            if (!error && data) userProfile = data;
+            if (!error && data) {
+                // Mapeia se o banco retornar campos diferentes, mas se rodou o script SQL, estará em snake_case
+                userProfile = data; 
+                // Fallback de segurança se vier nulo do banco
+                if(userProfile.avatar_index === undefined) userProfile.avatar_index = 0;
+                if(userProfile.ascii_color === undefined) userProfile.ascii_color = 'green';
+            }
         }
 
         // --- CORE ACTIONS ---
-        
-        // FUNÇÃO ROBUSTA PARA GERAR UUID (Evita o erro de timestamp)
         function uuidv4() {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 return crypto.randomUUID();
@@ -542,13 +552,7 @@
             const loading = document.getElementById('upload-loading');
             loading.style.display = 'flex';
 
-            // GERAÇÃO DE ID CORRIGIDA PARA UUID
-            // O erro anterior "invalid input syntax for type uuid" ocorria porque
-            // Date.now() não gera um UUID válido. crypto.randomUUID() resolve isso.
             const id = uuidv4();
-            console.log("Gerando ID para upload:", id); // Debug para verificar se está gerando UUID
-            
-            // Sanitizando nome do arquivo para evitar erros de URL
             const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
             const filePath = `videos/${id}_${cleanName}`;
 
@@ -572,6 +576,12 @@
                 const { data: publicUrlData } = supabaseClient.storage.from('videos').getPublicUrl(filePath);
                 const publicUrl = publicUrlData.publicUrl;
 
+                if (!publicUrl) {
+                    alert("ERRO FATAL: URL pública vazia.");
+                    loading.style.display = 'none';
+                    return;
+                }
+
                 // 3. Save to Database
                 const videoMetadata = {
                     id: id,
@@ -580,7 +590,7 @@
                     loc: document.getElementById('upload-loc').value.toUpperCase() || "UNKNOWN",
                     size: (file.size / 1048576).toFixed(1) + "MB",
                     date: new Date().toLocaleDateString('pt-BR'),
-                    video_url: publicUrl // CORRIGIDO: Agora usa 'video_url' para coincidir com o banco de dados
+                    video_url: publicUrl
                 };
 
                 const { error: dbError } = await supabaseClient.from('videos').insert([videoMetadata]);
@@ -604,24 +614,19 @@
 
         async function deleteVideo(id, url) {
             if(!confirm("ERASE DATA FROM CLOUD?")) return;
-            
             updateSyncStatus('DELETING...');
             try {
-                // Delete from Database
                 const { error: dbError } = await supabaseClient.from('videos').delete().eq('id', id);
-                
                 if (dbError) {
                     alert("DB DELETE ERROR: " + dbError.message);
                     updateSyncStatus('ERR');
                     return;
                 }
                 
-                // Delete from Storage
                 const pathParts = url.split('/videos/');
                 if (pathParts.length > 1) {
                     const relativePath = decodeURIComponent(pathParts[1]);
-                     const { error: storageError } = await supabaseClient.storage.from('videos').remove([relativePath]);
-                     if(storageError) console.warn("Storage delete warn:", storageError);
+                     await supabaseClient.storage.from('videos').remove([relativePath]);
                 }
 
                 cloudVideos = cloudVideos.filter(v => v.id !== id);
@@ -629,7 +634,6 @@
                 renderFeatured();
                 updateSyncStatus('IDLE');
             } catch (err) {
-                console.error("Delete failed:", err);
                 alert("DELETE FAILED: " + err.message);
                 updateSyncStatus('ERR');
             }
@@ -637,18 +641,22 @@
 
         async function saveProfile() {
             updateSyncStatus('SYNCING PROFILE...');
+            
+            // Atualiza objeto local com valores dos inputs
             userProfile.name = document.getElementById('profile-name').value;
             userProfile.bio = document.getElementById('profile-bio-input').value;
             userProfile.banner = document.getElementById('profile-banner').value;
-            userProfile.asciiColor = document.getElementById('profile-color').value;
+            userProfile.ascii_color = document.getElementById('profile-color').value; // snake_case
             
+            // Upsert envia os nomes das propriedades como nomes das colunas
             const { error } = await supabaseClient.from('profiles').upsert([userProfile]);
             
             if(!error) {
                 renderProfile();
                 toggleProfileEdit(false);
             } else {
-                alert("SYNC FAILED: " + error.message);
+                console.error("Save Profile Error:", error);
+                alert("SYNC FAILED: " + error.message + "\n\n(Verifique se as colunas no banco são 'ascii_color' e 'avatar_index')");
             }
             updateSyncStatus('IDLE');
         }
@@ -709,8 +717,9 @@
             if (vName) vName.innerText = userProfile.name;
             if (vBio) vBio.innerText = userProfile.bio;
             if (vAvatar) {
-                vAvatar.innerText = avatars[userProfile.avatarIndex];
-                vAvatar.style.color = asciiColors[userProfile.asciiColor];
+                // Usa propriedade snake_case
+                vAvatar.innerText = avatars[userProfile.avatar_index || 0];
+                vAvatar.style.color = asciiColors[userProfile.ascii_color || 'green'];
             }
             
             const pName = document.getElementById('profile-name');
@@ -722,18 +731,20 @@
             if (pName) pName.value = userProfile.name;
             if (pBio) pBio.value = userProfile.bio;
             if (pBanner) pBanner.value = userProfile.banner;
-            if (pColor) pColor.value = userProfile.asciiColor;
+            if (pColor) pColor.value = userProfile.ascii_color || 'green'; // snake_case
             if (eAvatar) {
-                eAvatar.innerText = avatars[userProfile.avatarIndex];
-                eAvatar.style.color = asciiColors[userProfile.asciiColor];
+                eAvatar.innerText = avatars[userProfile.avatar_index || 0];
+                eAvatar.style.color = asciiColors[userProfile.ascii_color || 'green'];
             }
             applyBanner(userProfile.banner);
         }
 
         window.cycleAvatar = (dir) => {
-            userProfile.avatarIndex = (userProfile.avatarIndex + dir + avatars.length) % avatars.length;
+            let idx = userProfile.avatar_index || 0;
+            idx = (idx + dir + avatars.length) % avatars.length;
+            userProfile.avatar_index = idx; // snake_case
             const disp = document.getElementById('avatar-edit-display');
-            if (disp) disp.innerText = avatars[userProfile.avatarIndex];
+            if (disp) disp.innerText = avatars[idx];
         };
 
         window.previewBanner = () => {

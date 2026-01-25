@@ -329,7 +329,7 @@
             </nav>
             <div style="font-size: 10px; color: #444; margin-top: auto;" id="system-info">
                 ID: LOADING...<br>
-                STORAGE: SUPABASE_FIX_UUID
+                STORAGE: SUPABASE_FIX_SCHEMA
             </div>
         </aside>
 
@@ -580,7 +580,7 @@
                     loc: document.getElementById('upload-loc').value.toUpperCase() || "UNKNOWN",
                     size: (file.size / 1048576).toFixed(1) + "MB",
                     date: new Date().toLocaleDateString('pt-BR'),
-                    url: publicUrl
+                    video_url: publicUrl // CORRIGIDO: Agora usa 'video_url' para coincidir com o banco de dados
                 };
 
                 const { error: dbError } = await supabaseClient.from('videos').insert([videoMetadata]);
@@ -660,7 +660,7 @@
 
             listBody.innerHTML = cloudVideos.map(vid => `
                 <tr>
-                    <td class="clickable-title" onclick="playVideo('${vid.url}', '${vid.alias || vid.name}')">
+                    <td class="clickable-title" onclick="playVideo('${vid.video_url}', '${vid.alias || vid.name}')">
                         ${vid.name}
                         ${vid.alias ? `<span class="alias-display">${vid.alias}</span>` : ''}
                     </td>
@@ -668,7 +668,7 @@
                     <td style="color:#666;">${vid.size}</td>
                     <td style="color:#666;">${vid.date}</td>
                     <td style="text-align: center;">
-                        <button class="btn-del" onclick="deleteVideo('${vid.id}', '${vid.url}')">[X]</button>
+                        <button class="btn-del" onclick="deleteVideo('${vid.id}', '${vid.video_url}')">[X]</button>
                     </td>
                 </tr>
             `).join('');
@@ -692,9 +692,9 @@
             }
 
             const vid = cloudVideos[currentFeatIndex % cloudVideos.length];
-            container.innerHTML = `<div class="clickable-title" style="font-size:3rem" onclick="playVideo('${vid.url}', '${vid.alias || vid.name}')">►</div><div style="font-family:var(--font-display); font-style:italic">${vid.alias || vid.name}</div>`;
+            container.innerHTML = `<div class="clickable-title" style="font-size:3rem" onclick="playVideo('${vid.video_url}', '${vid.alias || vid.name}')">►</div><div style="font-family:var(--font-display); font-style:italic">${vid.alias || vid.name}</div>`;
             label.innerText = `[${(currentFeatIndex % cloudVideos.length) + 1}/${cloudVideos.length}] LOC: ${vid.loc}`;
-            miniature.innerHTML = `<video class="home-video-miniature" src="${vid.url}" muted autoplay loop></video>`;
+            miniature.innerHTML = `<video class="home-video-miniature" src="${vid.video_url}" muted autoplay loop></video>`;
         }
 
         // --- PROFILE UTILS ---
